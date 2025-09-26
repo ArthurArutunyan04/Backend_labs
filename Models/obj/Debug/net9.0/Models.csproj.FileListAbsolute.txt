@@ -1,0 +1,11 @@
+/home/artur/RiderProjects/WebApp/Models/bin/Debug/net9.0/Models.deps.json
+/home/artur/RiderProjects/WebApp/Models/bin/Debug/net9.0/Models.dll
+/home/artur/RiderProjects/WebApp/Models/bin/Debug/net9.0/Models.pdb
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/Models.GeneratedMSBuildEditorConfig.editorconfig
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/Models.AssemblyInfoInputs.cache
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/Models.AssemblyInfo.cs
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/Models.csproj.CoreCompileInputs.cache
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/Models.dll
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/refint/Models.dll
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/Models.pdb
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/ref/Models.dll
