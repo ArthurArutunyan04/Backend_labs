@@ -3,30 +3,27 @@ using Models.Dto.V1.Requests;
 
 namespace WebApi.Validators
 {
-    public class V1QueryOrdersRequestValidator : AbstractValidator<V1QueryOrdersRequest>
+    public class V1QueryOrdersRequestValidator: AbstractValidator<V1QueryOrdersRequest>
     {
         public V1QueryOrdersRequestValidator()
         {
-            RuleFor(x => x.CustomerIds)
-                .NotNull().WithMessage("CustomerIds cannot be null")
-                .NotEmpty().WithMessage("CustomerIds cannot be empty")
-                .Must(x => x.All(id => id > 0)).WithMessage("Each CustomerId must be greater than 0");
-
-            RuleFor(x => x.Ids)
-                .NotEmpty().WithMessage("Ids cannot be empty if provided")
-                .When(x => x.Ids != null);
-
             RuleForEach(x => x.Ids)
-                .GreaterThan(0).WithMessage("Each Id must be greater than 0")
-                .When(x => x.Ids != null);
+                .GreaterThan(0).WithMessage("ID must be positive");
+
+            RuleForEach(x => x.CustomerIds)
+                .GreaterThan(0).WithMessage("Customer ID must be positive");
 
             RuleFor(x => x.Page)
-                .GreaterThanOrEqualTo(0).WithMessage("Page must be greater than or equal to 0")
-                .When(x => x.Page.HasValue);
+                .GreaterThan(0).WithMessage("Page must be greater than 0")
+                .When(x => x.Page is not null);
 
             RuleFor(x => x.PageSize)
-                .GreaterThan(0).WithMessage("PageSize must be greater than 0")
-                .When(x => x.PageSize.HasValue);
+                .GreaterThan(0).WithMessage("Page size must be greater than 0")
+                .When(x => x.PageSize is not null);
+
+            RuleFor(x => x)
+                .Must(x => x.Ids?.Length > 0 || x.CustomerIds?.Length > 0)
+                .WithMessage("Either IDs or Customer IDs must be provided");
         }
     }
 }
