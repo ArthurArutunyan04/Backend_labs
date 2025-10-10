@@ -88,3 +88,4 @@
 /home/artur/RiderProjects/WebApp/Migrations/obj/Debug/net9.0/Migrations.pdb
 /home/artur/RiderProjects/WebApp/Migrations/obj/Debug/net9.0/Migrations.genruntimeconfig.cache
 /home/artur/RiderProjects/WebApp/Migrations/obj/Debug/net9.0/ref/Migrations.dll
+/home/artur/RiderProjects/WebApp/Migrations/obj/Debug/net9.0/Migrations.sourcelink.json

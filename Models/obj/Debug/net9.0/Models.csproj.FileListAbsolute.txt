@@ -9,3 +9,4 @@
 /home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/refint/Models.dll
 /home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/Models.pdb
 /home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/ref/Models.dll
+/home/artur/RiderProjects/WebApp/Models/obj/Debug/net9.0/Models.sourcelink.json
