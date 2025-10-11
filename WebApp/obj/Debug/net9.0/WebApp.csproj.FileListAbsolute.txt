@@ -103,3 +103,10 @@
 /home/artur/RiderProjects/WebApp/WebApp/obj/Debug/net9.0/WebApp.pdb
 /home/artur/RiderProjects/WebApp/WebApp/obj/Debug/net9.0/WebApp.genruntimeconfig.cache
 /home/artur/RiderProjects/WebApp/WebApp/obj/Debug/net9.0/ref/WebApp.dll
+/home/artur/RiderProjects/WebApp/WebApp/bin/Debug/net9.0/Newtonsoft.Json.dll
+/home/artur/RiderProjects/WebApp/WebApp/bin/Debug/net9.0/RabbitMQ.Client.dll
+/home/artur/RiderProjects/WebApp/WebApp/bin/Debug/net9.0/Common.dll
+/home/artur/RiderProjects/WebApp/WebApp/bin/Debug/net9.0/Messages.dll
+/home/artur/RiderProjects/WebApp/WebApp/bin/Debug/net9.0/Common.pdb
+/home/artur/RiderProjects/WebApp/WebApp/bin/Debug/net9.0/Messages.pdb
+/home/artur/RiderProjects/WebApp/WebApp/obj/Debug/net9.0/WebApp.sourcelink.json

@@ -1,11 +1,17 @@
 using DefaultNamespace;
 using DefaultNamespace.Interfaces;
 using DefaultNamespace.models;
+using Messages;
+using Microsoft.Extensions.Options;
 using WebApp.BLL.Models;
+using WebApp.Config;
 
 namespace WebApp.BLL.Services;
 
-public class OrderService(UnitOfWork unitOfWork, IOrderRepository orderRepository, IOrderItemRepository orderItemRepository)
+public class OrderService(
+    UnitOfWork unitOfWork, IOrderRepository orderRepository, IOrderItemRepository orderItemRepository, 
+    RabbitMqService rabbitMqService, IOptions<RabbitMqSettings> rabbitMqSettings
+    )
 {
     /// <summary>
     /// Метод создания заказов
@@ -58,6 +64,19 @@ public class OrderService(UnitOfWork unitOfWork, IOrderRepository orderRepositor
 
             await transaction.CommitAsync(token);
 
+            var messages = insertedOrders.Select(order => new OrderCreatedMessage
+            {
+                Id = order.Id,
+                CustomerId = order.CustomerId,
+                DeliveryAddress = order.DeliveryAddress,
+                TotalPriceCents = order.TotalPriceCents,
+                TotalPriceCurrency = order.TotalPriceCurrency,
+                CreatedAt = order.CreatedAt,
+                UpdatedAt = order.UpdatedAt,
+            }).ToArray();
+
+            await rabbitMqService.Publish(messages, rabbitMqSettings.Value.OrderCreatedQueue, token);            
+            
             return Map(insertedOrders, orderItemLookup);
         }
         catch (Exception e)

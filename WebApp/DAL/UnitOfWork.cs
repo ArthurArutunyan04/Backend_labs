@@ -19,6 +19,7 @@ public class UnitOfWork(IOptions<DbSettings> dbSettings): IDisposable
         var dataSource = new NpgsqlDataSourceBuilder(dbSettings.Value.ConnectionString);
         dataSource.MapComposite<V1OrderDal>("v1_order");
         dataSource.MapComposite<V1OrderItemDal>("v1_order_item");
+        dataSource.MapComposite<V1AuditLogOrderDal>("v1_audit_log_order");
        
         _connection = dataSource.Build().CreateConnection();
         _connection.StateChange += (sender, args) =>

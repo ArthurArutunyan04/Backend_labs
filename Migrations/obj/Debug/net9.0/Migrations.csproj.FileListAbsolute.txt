@@ -88,3 +88,6 @@
 /home/artur/RiderProjects/WebApp/Migrations/obj/Debug/net9.0/Migrations.pdb
 /home/artur/RiderProjects/WebApp/Migrations/obj/Debug/net9.0/Migrations.genruntimeconfig.cache
 /home/artur/RiderProjects/WebApp/Migrations/obj/Debug/net9.0/ref/Migrations.dll
+/home/artur/RiderProjects/WebApp/Migrations/bin/Debug/net9.0/RabbitMQ.Client.dll
+/home/artur/RiderProjects/WebApp/Migrations/bin/Debug/net9.0/System.Threading.RateLimiting.dll
+/home/artur/RiderProjects/WebApp/Migrations/obj/Debug/net9.0/Migrations.sourcelink.json
