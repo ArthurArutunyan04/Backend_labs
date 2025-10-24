@@ -73,6 +73,19 @@ public class OrderService(
                 TotalPriceCurrency = order.TotalPriceCurrency,
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
+                OrderItems = orderItemLookup[order.Id]?.Select(item => new OrderCreatedMessage.OrderItemMessage
+                {
+                    Id = item.Id,
+                    OrderId = item.OrderId,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    ProductTitle = item.ProductTitle,
+                    ProductUrl = item.ProductUrl,
+                    PriceCents = item.PriceCents,
+                    PriceCurrency = item.PriceCurrency,
+                    CreatedAt = item.CreatedAt,
+                    UpdatedAt = item.UpdatedAt
+                }).ToArray() ?? Array.Empty<OrderCreatedMessage.OrderItemMessage>()
             }).ToArray();
 
             await rabbitMqService.Publish(messages, rabbitMqSettings.Value.OrderCreatedQueue, token);            

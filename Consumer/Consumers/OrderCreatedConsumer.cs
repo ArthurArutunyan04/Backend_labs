@@ -18,24 +18,24 @@ public class OrderCreatedConsumer : IHostedService
     private IConnection _connection;
     private IChannel _channel;
     private AsyncEventingBasicConsumer _consumer;
-    
+
     public OrderCreatedConsumer(IOptions<RabbitMqSettings> rabbitMqSettings, IServiceProvider serviceProvider)
     {
         _rabbitMqSettings = rabbitMqSettings;
         _serviceProvider = serviceProvider;
         _factory = new ConnectionFactory { HostName = rabbitMqSettings.Value.HostName, Port = rabbitMqSettings.Value.Port };
     }
-    
+
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         _connection = await _factory.CreateConnectionAsync(cancellationToken);
         _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
         await _channel.QueueDeclareAsync(
-            queue: _rabbitMqSettings.Value.OrderCreatedQueue, 
-            durable: false, 
+            queue: _rabbitMqSettings.Value.OrderCreatedQueue,
+            durable: false,
             exclusive: false,
             autoDelete: false,
-            arguments: null, 
+            arguments: null,
             cancellationToken: cancellationToken);
 
         _consumer = new AsyncEventingBasicConsumer(_channel);
@@ -46,13 +46,13 @@ public class OrderCreatedConsumer : IHostedService
             var order = message.FromJson<OrderCreatedMessage>();
 
             Console.WriteLine("Received: " + message);
-            
+
             using var scope = _serviceProvider.CreateScope();
             var client = scope.ServiceProvider.GetRequiredService<Client>();
             await client.LogOrder(new V1CreateAuditLogRequest
             {
-                Orders = order.OrderItems.Select(x => 
-                    new V1CreateAuditLogRequest.LogOrder
+                Orders = (order?.OrderItems ?? Array.Empty<OrderCreatedMessage.OrderItemMessage>())
+                    .Select(x => new V1CreateAuditLogRequest.LogOrder
                     {
                         OrderId = order.Id,
                         OrderItemId = x.Id,
@@ -61,10 +61,10 @@ public class OrderCreatedConsumer : IHostedService
                     }).ToArray()
             }, CancellationToken.None);
         };
-        
+
         await _channel.BasicConsumeAsync(
-            queue: _rabbitMqSettings.Value.OrderCreatedQueue, 
-            autoAck: true, 
+            queue: _rabbitMqSettings.Value.OrderCreatedQueue,
+            autoAck: true,
             consumer: _consumer,
             cancellationToken: cancellationToken);
     }
