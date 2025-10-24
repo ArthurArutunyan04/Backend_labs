@@ -18,6 +18,6 @@ Messages/bin/
 Migrations/obj/
 Migrations/bin/
 Models/obj/
-Models/bin/
+Models/bin/ 
 WebApp/obj/
 WebApp/bin/
