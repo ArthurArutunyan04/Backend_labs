@@ -1,3 +1,4 @@
+using Common;
 using FluentValidation;
 using Models.Dto.V1.Requests;
 
@@ -7,6 +8,7 @@ public class V1CreateAuditLogRequestValidator : AbstractValidator<V1CreateAuditL
 {
     public V1CreateAuditLogRequestValidator()
     {
+        RuleFor(x => x.Orders).NotEmpty();
         RuleForEach(x => x.Orders)
             .NotNull();
         RuleForEach(x => x.Orders)
@@ -22,8 +24,7 @@ public class V1CreateAuditLogRequestValidator : AbstractValidator<V1CreateAuditL
                     .GreaterThan(0)
                     .WithMessage("CustomerId must be greater than 0");
                 order.RuleFor(o => o.OrderStatus)
-                    .NotEmpty()
-                    .WithMessage("OrderStatus must not be empty");
+                    .NotEmpty().IsEnumName(typeof(OrderStatus)).WithMessage("OrderStatus must not be empty");
             });
     }
 }

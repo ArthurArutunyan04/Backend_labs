@@ -9,27 +9,40 @@ public class AuditLogService(UnitOfWork unitOfWork, IAuditLogOrderRepository aud
     public async Task<AuditLogOrderUnit[]> BatchInsert(AuditLogOrderUnit[] logUnits, CancellationToken token)
     {
         var now = DateTimeOffset.UtcNow;
+        await using var transaction = await unitOfWork.BeginTransactionAsync(token);
 
-        var dalModels = logUnits.Select(x => new V1AuditLogOrderDal
+        try
         {
-            OrderId = x.OrderId,
-            OrderItemId = x.OrderItemId,
-            CustomerId = x.CustomerId,
-            OrderStatus = x.OrderStatus,
-            CreatedAt = now,
-            UpdatedAt = now
-        }).ToArray();
+            var dalModels = logUnits.Select(x => new V1AuditLogOrderDal
+            {
+                OrderId = x.OrderId,
+                OrderItemId = x.OrderItemId,
+                CustomerId = x.CustomerId,
+                OrderStatus = x.OrderStatus,
+                CreatedAt = now,
+                UpdatedAt = now
+            }).ToArray();
 
-        var insertedLogs = await auditLogOrderRepository.BulkInsert(dalModels, token);
+            var insertedLogs = await auditLogOrderRepository.BulkInsert(dalModels, token);
 
-        return insertedLogs.Select(x => new AuditLogOrderUnit
+            await transaction.CommitAsync(token);
+            
+            var result = insertedLogs.Select(x => new AuditLogOrderUnit
+            {
+                OrderId = x.OrderId,
+                OrderItemId = x.OrderItemId,
+                CustomerId = x.CustomerId,
+                OrderStatus = x.OrderStatus,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
+            }).ToArray();
+
+            return result;
+        }
+        catch
         {
-            OrderId = x.OrderId,
-            OrderItemId = x.OrderItemId,
-            CustomerId = x.CustomerId,
-            OrderStatus = x.OrderStatus,
-            CreatedAt = x.CreatedAt,
-            UpdatedAt = x.UpdatedAt
-        }).ToArray();
+            await transaction.RollbackAsync(token);
+            throw;
+        }
     }
 }

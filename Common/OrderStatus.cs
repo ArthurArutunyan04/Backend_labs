@@ -1,4 +1,4 @@
-namespace Consumer;
+namespace Common;
 
 public enum OrderStatus
 {
