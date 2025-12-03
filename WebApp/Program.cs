@@ -6,6 +6,7 @@ using DefaultNamespace.Repositories;
 using FluentValidation;
 using WebApp.BLL.Services;
 using WebApp.Config;
+using WebApp.Jobs;
 using WebApp.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,11 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 
 builder.Services.AddSwaggerGen();
+
+
+builder.Services.AddHostedService<OrderGenerator>();
+
+
 
 var app = builder.Build();
 

@@ -342,6 +342,10 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "AutoFixture": {
+              "target": "Package",
+              "version": "[5.0.0-preview0012, )"
+            },
             "Dapper": {
               "target": "Package",
               "version": "[2.1.66, )"

@@ -1,12 +1,14 @@
 {
   "version": 2,
-  "dgSpecHash": "J3wC26y33bg=",
+  "dgSpecHash": "I6Vjqs1XatM=",
   "success": true,
   "projectFilePath": "/home/artur/RiderProjects/WebApp/WebApp/WebApp.csproj",
   "expectedPackageFiles": [
+    "/home/artur/.nuget/packages/autofixture/5.0.0-preview0012/autofixture.5.0.0-preview0012.nupkg.sha512",
     "/home/artur/.nuget/packages/azure.core/1.38.0/azure.core.1.38.0.nupkg.sha512",
     "/home/artur/.nuget/packages/azure.identity/1.11.4/azure.identity.1.11.4.nupkg.sha512",
     "/home/artur/.nuget/packages/dapper/2.1.66/dapper.2.1.66.nupkg.sha512",
+    "/home/artur/.nuget/packages/fare/2.2.1/fare.2.2.1.nupkg.sha512",
     "/home/artur/.nuget/packages/firebirdsql.data.firebirdclient/10.3.1/firebirdsql.data.firebirdclient.10.3.1.nupkg.sha512",
     "/home/artur/.nuget/packages/fluentmigrator/6.2.0/fluentmigrator.6.2.0.nupkg.sha512",
     "/home/artur/.nuget/packages/fluentmigrator.abstractions/6.2.0/fluentmigrator.abstractions.6.2.0.nupkg.sha512",
