@@ -1,8 +1,8 @@
 namespace Consumer.Base;
 
-public class MessageInfo
+public class MessageInfo<TMessage>
 {
-    public string Message { get; set; }
+    public TMessage Message { get; set; }
     public ulong DeliveryTag { get; set; }
     public DateTimeOffset ReceivedAt { get; set; }
-}   
+}

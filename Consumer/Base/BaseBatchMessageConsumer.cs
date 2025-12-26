@@ -1,132 +1,142 @@
 using System.Text;
 using Common;
 using Consumer.Config;
+using Messages;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
 namespace Consumer.Base;
 
-public abstract class BaseBatchMessageConsumer<T>(RabbitMqSettings rabbitMqSettings): IHostedService
-    where T : class
+public abstract class BaseBatchMessageConsumer<TMessage> : BackgroundService
+    where TMessage : BaseMessage
 {
-    private IConnection _connection;
-    private IChannel _channel;
+    private readonly RabbitMqSettings _settings;
+    private readonly Func<RabbitMqSettings, RabbitMqSettings.TopicSettingsUnit> _getTopicSettings;
 
-    private readonly ConnectionFactory _factory = new() { HostName = rabbitMqSettings.HostName, Port = rabbitMqSettings.Port };
-    private List<MessageInfo> _messageBuffer;
-    private Timer _batchTimer;
-    private SemaphoreSlim _processingSemaphore;
+    private ConnectionFactory _factory = null!;
+    private IConnection _connection = null!;
+    private IChannel _channel = null!;
 
-    protected abstract Task ProcessMessages(T[] messages);
+    private readonly List<MessageInfo<TMessage>> _batch = [];
+    private Timer? _timer;
 
-    public async Task StartAsync(CancellationToken token)
+    protected BaseBatchMessageConsumer(
+        RabbitMqSettings settings,
+        Func<RabbitMqSettings, RabbitMqSettings.TopicSettingsUnit> getTopicSettings)
     {
-        _connection = await _factory.CreateConnectionAsync(token);
-        _channel = await _connection.CreateChannelAsync(cancellationToken: token);
-        
-        _messageBuffer = new List<MessageInfo>();
-        _processingSemaphore = new SemaphoreSlim(1, 1);
-        
-        // Настройка prefetch для батчевой обработки
-        await _channel.BasicQosAsync(0, (ushort)(rabbitMqSettings.BatchSize * 2), false, token);
-        
-        var batchTimeout = TimeSpan.FromSeconds(rabbitMqSettings.BatchTimeoutSeconds);
-        // Таймер для принудительной обработки по времени
-        _batchTimer = new Timer(ProcessBatchByTimeout, null, batchTimeout, batchTimeout);
-        
+        _settings = settings;
+        _getTopicSettings = getTopicSettings;
+    }
+
+    protected abstract Task ProcessMessages(TMessage[] messages);
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var topicSettings = _getTopicSettings(_settings);
+
+        _factory = new ConnectionFactory
+        {
+            HostName = _settings.HostName,
+            Port = _settings.Port
+        };
+
+        _connection = await _factory.CreateConnectionAsync(stoppingToken);
+        _channel = await _connection.CreateChannelAsync(cancellationToken: stoppingToken);
+
+        await _channel.ExchangeDeclareAsync(
+            exchange: topicSettings.DeadLetter.Dlx,
+            type: ExchangeType.Direct,
+            durable: true,
+            cancellationToken: stoppingToken);
+
         await _channel.QueueDeclareAsync(
-            queue: rabbitMqSettings.OrderCreatedQueue, 
-            durable: false, 
+            queue: topicSettings.DeadLetter.Dlq,
+            durable: true,
             exclusive: false,
             autoDelete: false,
-            arguments: null, 
-            cancellationToken: token);
-        
+            arguments: null,
+            cancellationToken: stoppingToken);
+
+        await _channel.QueueBindAsync(
+            queue: topicSettings.DeadLetter.Dlq,
+            exchange: topicSettings.DeadLetter.Dlx,
+            routingKey: topicSettings.DeadLetter.RoutingKey,
+            cancellationToken: stoppingToken);
+
+        var queueArgs = new Dictionary<string, object>
+        {
+            {"x-dead-letter-exchange", topicSettings.DeadLetter.Dlx},
+            {"x-dead-letter-routing-key", topicSettings.DeadLetter.RoutingKey}
+        };
+
+        await _channel.QueueDeclareAsync(
+            queue: topicSettings.Queue,
+            durable: false,
+            exclusive: false,
+            autoDelete: false,
+            arguments: queueArgs,
+            cancellationToken: stoppingToken);
+
         var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.ReceivedAsync += OnMessageReceived;
-        
-        await _channel.BasicConsumeAsync(queue: rabbitMqSettings.OrderCreatedQueue, autoAck: false, consumer: consumer, cancellationToken: token);
-    }
-    
-    private async Task OnMessageReceived(object sender, BasicDeliverEventArgs ea)
-    {
-        await _processingSemaphore.WaitAsync();
-        
-        try
+        consumer.ReceivedAsync += async (model, ea) =>
         {
-            var message = Encoding.UTF8.GetString(ea.Body.ToArray());
-            _messageBuffer.Add(new MessageInfo
-            {
-                Message = message,
-                DeliveryTag = ea.DeliveryTag,
-                ReceivedAt = DateTimeOffset.UtcNow
-            });
+            var body = ea.Body.ToArray();
+            var json = Encoding.UTF8.GetString(body);
+            var message = json.FromJson<TMessage>();
 
-            // Если достигли лимита батча - обрабатываем
-            if (_messageBuffer.Count >= rabbitMqSettings.BatchSize)
+            lock (_batch)
+            {
+                _batch.Add(new MessageInfo<TMessage> { Message = message, DeliveryTag = ea.DeliveryTag });
+            }
+
+            if (_batch.Count >= topicSettings.BatchSize)
             {
                 await ProcessBatch();
             }
-        }
-        finally
-        {
-            _processingSemaphore.Release();
-        }
-    }
-
-    private async void ProcessBatchByTimeout(object state)
-    {
-        await _processingSemaphore.WaitAsync();
-        
-        try
-        {
-            if (_messageBuffer.Count > 0)
+            else
             {
-                await ProcessBatch();
+                _timer?.Dispose();
+                _timer = new Timer(async _ => await ProcessBatch(), null, TimeSpan.FromSeconds(topicSettings.BatchTimeoutSeconds), Timeout.InfiniteTimeSpan);
             }
-        }
-        finally
-        {
-            _processingSemaphore.Release();
-        }
+
+            async Task ProcessBatch()
+            {
+                _timer?.Dispose();
+                _timer = null;
+
+                MessageInfo<TMessage>[] batchCopy;
+                lock (_batch)
+                {
+                    batchCopy = _batch.ToArray();
+                    _batch.Clear();
+                }
+
+                if (batchCopy.Length > 0)
+                {
+                    try
+                    {
+                        await ProcessMessages(batchCopy.Select(m => m.Message).ToArray());
+
+                        await _channel.BasicAckAsync(batchCopy[^1].DeliveryTag, true);
+                    }
+                    catch (Exception)
+                    {
+                        await _channel.BasicNackAsync(batchCopy[^1].DeliveryTag, multiple: true, requeue: false);
+                    }
+                }
+            }
+        };
+
+        await _channel.BasicConsumeAsync(queue: topicSettings.Queue, autoAck: false, consumer: consumer);
+
+        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
-    private async Task ProcessBatch()
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        if (_messageBuffer.Count == 0) return;
-
-        var currentBatch = _messageBuffer.ToList();
-        _messageBuffer.Clear();
-
-        try
-        {
-            var messages = currentBatch.Select(x => x.Message.FromJson<T>()).ToArray();
-            
-            // Ваша логика обработки батча
-            await ProcessMessages(messages);
-            
-            // ACK всех сообщений в батче (multiple = true для последнего)
-            var lastDeliveryTag = currentBatch.Max(x => x.DeliveryTag);
-            await _channel.BasicAckAsync(lastDeliveryTag, multiple: true);
-            
-            Console.WriteLine($"Successfully processed batch of {currentBatch.Count} messages");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to process batch: {ex.Message}");
-            
-            // NACK всех сообщений в батче для повторной обработки
-            var lastDeliveryTag = currentBatch.Max(x => x.DeliveryTag);
-            await _channel.BasicNackAsync(lastDeliveryTag, multiple: true, requeue: true);
-        }
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        _batchTimer?.Dispose();
-        _channel?.Dispose();
-        _connection?.Dispose();
-        _processingSemaphore?.Dispose();
-        return Task.CompletedTask;
+        _timer?.Dispose();
+        await _channel.CloseAsync(cancellationToken: cancellationToken);
+        await _connection.CloseAsync(cancellationToken: cancellationToken);
+        await base.StopAsync(cancellationToken);
     }
 }

@@ -15,4 +15,6 @@ public class V1OrderDal
     public DateTimeOffset CreatedAt { get; set; }
     
     public DateTimeOffset UpdatedAt { get; set; }
+    
+    public string Status { get; set; } = "Created";
 }

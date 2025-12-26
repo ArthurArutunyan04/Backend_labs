@@ -12,6 +12,7 @@ public class InitOrderTable: Migration
                delivery_address text not null,
                total_price_cents bigint not null,
                total_price_currency text not null,
+               status text not null default 'Created',
                created_at timestamp with time zone not null,
                updated_at timestamp with time zone not null
             );
@@ -39,6 +40,7 @@ public class InitOrderTable: Migration
                 delivery_address text,
                 total_price_cents bigint,
                 total_price_currency text,
+                status text,  -- ✅ Добавлено в тип
                 created_at timestamp with time zone,
                 updated_at timestamp with time zone
             );

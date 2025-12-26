@@ -2,7 +2,7 @@ using Models.Dto.Common;
 
 namespace Messages;
 
-public class OrderCreatedMessage
+public class OmsOrderCreatedMessage : BaseMessage
 {
     public long Id { get; set; }
     public long CustomerId { get; set; }
@@ -12,6 +12,8 @@ public class OrderCreatedMessage
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
     public OrderItemMessage[] OrderItems { get; set; }
+
+    public override string RoutingKey => "order.created";
 
     public class OrderItemMessage
     {

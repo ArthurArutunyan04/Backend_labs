@@ -9,14 +9,11 @@ using WebApp.Config;
 namespace WebApp.BLL.Services;
 
 public class OrderService(
-    UnitOfWork unitOfWork, IOrderRepository orderRepository, IOrderItemRepository orderItemRepository, 
+    UnitOfWork unitOfWork, IOrderRepository orderRepository, IOrderItemRepository orderItemRepository,
     RabbitMqService rabbitMqService, IOptions<RabbitMqSettings> rabbitMqSettings
-    )
+)
 {
-    /// <summary>
-    /// Метод создания заказов
-    /// </summary>
-   public async Task<OrderUnit[]> BatchInsert(OrderUnit[] orderUnits, CancellationToken token)
+    public async Task<OrderUnit[]> BatchInsert(OrderUnit[] orderUnits, CancellationToken token)
     {
         var now = DateTimeOffset.UtcNow;
         await using var transaction = await unitOfWork.BeginTransactionAsync(token);
@@ -30,7 +27,8 @@ public class OrderService(
                 TotalPriceCents = o.TotalPriceCents,
                 TotalPriceCurrency = o.TotalPriceCurrency,
                 CreatedAt = now,
-                UpdatedAt = now
+                UpdatedAt = now,
+                Status = "Created"
             }).ToArray();
 
             var insertedOrders = await orderRepository.BulkInsert(ordersDal, token);
@@ -64,7 +62,7 @@ public class OrderService(
 
             await transaction.CommitAsync(token);
 
-            var messages = insertedOrders.Select(order => new OrderCreatedMessage
+            var messages = insertedOrders.Select(order => new OmsOrderCreatedMessage
             {
                 Id = order.Id,
                 CustomerId = order.CustomerId,
@@ -73,7 +71,7 @@ public class OrderService(
                 TotalPriceCurrency = order.TotalPriceCurrency,
                 CreatedAt = order.CreatedAt,
                 UpdatedAt = order.UpdatedAt,
-                OrderItems = orderItemLookup[order.Id]?.Select(item => new OrderCreatedMessage.OrderItemMessage
+                OrderItems = orderItemLookup[order.Id]?.Select(item => new OmsOrderCreatedMessage.OrderItemMessage
                 {
                     Id = item.Id,
                     OrderId = item.OrderId,
@@ -85,11 +83,11 @@ public class OrderService(
                     PriceCurrency = item.PriceCurrency,
                     CreatedAt = item.CreatedAt,
                     UpdatedAt = item.UpdatedAt
-                }).ToArray() ?? Array.Empty<OrderCreatedMessage.OrderItemMessage>()
+                }).ToArray() ?? Array.Empty<OmsOrderCreatedMessage.OrderItemMessage>()
             }).ToArray();
 
-            await rabbitMqService.Publish(messages, rabbitMqSettings.Value.OrderCreatedQueue, token);            
-            
+            await rabbitMqService.Publish(messages, token);
+
             return Map(insertedOrders, orderItemLookup);
         }
         catch (Exception e)
@@ -98,10 +96,7 @@ public class OrderService(
             throw;
         }
     }
-    
-    /// <summary>
-    /// Метод получения заказов
-    /// </summary>
+
     public async Task<OrderUnit[]> GetOrders(QueryOrderItemsModel model, CancellationToken token)
     {
         var orders = await orderRepository.Query(new QueryOrdersDalModel
@@ -116,7 +111,7 @@ public class OrderService(
         {
             return [];
         }
-        
+
         ILookup<long, V1OrderItemDal> orderItemLookup = null;
         if (model.IncludeOrderItems)
         {
@@ -130,7 +125,48 @@ public class OrderService(
 
         return Map(orders, orderItemLookup);
     }
-    
+
+    public async Task UpdateOrdersStatusAsync(long[] orderIds, string newStatus, CancellationToken token)
+    {
+        if (orderIds.Length == 0) return;
+
+        var orders = await orderRepository.GetByIdsAsync(orderIds.ToList(), token);
+
+        var orderDict = orders.ToDictionary(o => o.Id, o => o);
+
+        foreach (var orderId in orderIds)
+        {
+            if (!orderDict.TryGetValue(orderId, out var order))
+                continue;
+
+            if (!CanTransition(order.Status, newStatus))
+                throw new InvalidOperationException($"Cannot transition from '{order.Status}' to '{newStatus}' for order {orderId}.");
+        }
+
+        await orderRepository.UpdateStatusesAsync(orderIds.ToList(), newStatus, token);
+
+        var statusChangedMessages = orderIds.Select(id => new OmsOrderStatusChangedMessage
+        {
+            OrderId = id,
+            OrderStatus = newStatus
+        }).ToArray();
+
+        await rabbitMqService.Publish(statusChangedMessages, token);
+    }
+
+    private bool CanTransition(string currentStatus, string newStatus)
+    {
+        var transitions = new Dictionary<string, HashSet<string>>
+        {
+            ["Created"] = new() { "Processed", "Cancelled" },
+            ["Processed"] = new() { "Completed", "Cancelled" },
+            ["Cancelled"] = new(),
+            ["Completed"] = new(),
+        };
+
+        return transitions.TryGetValue(currentStatus, out var allowed) && allowed.Contains(newStatus);
+    }
+
     private OrderUnit[] Map(V1OrderDal[] orders, ILookup<long, V1OrderItemDal> orderItemLookup = null)
     {
         return orders.Select(x => new OrderUnit

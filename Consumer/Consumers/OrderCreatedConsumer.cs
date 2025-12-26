@@ -8,7 +8,6 @@ using RabbitMQ.Client.Events;
 using Models.Dto.V1.Requests;
 using Messages;
 
-
 namespace Consumer.Consumers;
 
 public class OrderCreatedConsumer : IHostedService
@@ -31,8 +30,9 @@ public class OrderCreatedConsumer : IHostedService
     {
         _connection = await _factory.CreateConnectionAsync(cancellationToken);
         _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
+        
         await _channel.QueueDeclareAsync(
-            queue: _rabbitMqSettings.Value.OrderCreatedQueue,
+            queue: _rabbitMqSettings.Value.OrderCreated.Queue, 
             durable: false,
             exclusive: false,
             autoDelete: false,
@@ -50,7 +50,8 @@ public class OrderCreatedConsumer : IHostedService
             {
                 var body = args.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
-                var order = message.FromJson<OrderCreatedMessage>();
+                
+                var order = message.FromJson<OmsOrderCreatedMessage>();
 
                 Console.WriteLine("Received: " + message);
 
@@ -58,7 +59,7 @@ public class OrderCreatedConsumer : IHostedService
                 var client = scope.ServiceProvider.GetRequiredService<Client>();
                 await client.LogOrder(new V1CreateAuditLogRequest
                 {
-                    Orders = (order?.OrderItems ?? Array.Empty<OrderCreatedMessage.OrderItemMessage>())
+                    Orders = (order?.OrderItems ?? Array.Empty<OmsOrderCreatedMessage.OrderItemMessage>())
                         .Select(x => new V1CreateAuditLogRequest.LogOrder
                         {
                             OrderId = order.Id,
@@ -80,7 +81,7 @@ public class OrderCreatedConsumer : IHostedService
         };
 
         await _channel.BasicConsumeAsync(
-            queue: _rabbitMqSettings.Value.OrderCreatedQueue,
+            queue: _rabbitMqSettings.Value.OrderCreated.Queue,
             autoAck: false,
             consumer: _consumer,
             cancellationToken: cancellationToken);
