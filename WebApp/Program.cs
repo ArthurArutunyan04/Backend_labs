@@ -29,7 +29,7 @@ builder.Services.AddScoped<RabbitMqService>();
 
 
 builder.Services.AddValidatorsFromAssemblyContaining(typeof(Program));
-builder.Services.AddScoped<ValidatorFactory>();
+builder.Services.AddScoped<ValidatorFactory>(); 
 
 builder.Services.AddControllers().AddJsonOptions(options => 
 {
