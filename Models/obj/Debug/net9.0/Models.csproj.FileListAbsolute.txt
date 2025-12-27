@@ -1,0 +1,11 @@
+C:\Backend\Lab_1\Models\bin\Debug\net9.0\Models.deps.json
+C:\Backend\Lab_1\Models\bin\Debug\net9.0\Models.dll
+C:\Backend\Lab_1\Models\bin\Debug\net9.0\Models.pdb
+C:\Backend\Lab_1\Models\obj\Debug\net9.0\Models.GeneratedMSBuildEditorConfig.editorconfig
+C:\Backend\Lab_1\Models\obj\Debug\net9.0\Models.AssemblyInfoInputs.cache
+C:\Backend\Lab_1\Models\obj\Debug\net9.0\Models.AssemblyInfo.cs
+C:\Backend\Lab_1\Models\obj\Debug\net9.0\Models.csproj.CoreCompileInputs.cache
+C:\Backend\Lab_1\Models\obj\Debug\net9.0\Models.dll
+C:\Backend\Lab_1\Models\obj\Debug\net9.0\refint\Models.dll
+C:\Backend\Lab_1\Models\obj\Debug\net9.0\Models.pdb
+C:\Backend\Lab_1\Models\obj\Debug\net9.0\ref\Models.dll

@@ -1,0 +1,9 @@
+C:\Backend\Lab_1\WebApi\obj\Debug\net9.0\staticwebassets.build.json
+C:\Backend\Lab_1\WebApi\obj\Debug\net9.0\staticwebassets.build.json
+C:\Backend\Lab_1\WebApi\obj\Debug\net9.0\staticwebassets.build.json
+C:\Backend\Lab_1\WebApi\obj\Debug\net9.0\staticwebassets.build.json
+C:\Backend\Lab_1\WebApi\obj\Debug\net9.0\staticwebassets.build.json
+C:\Backend\Lab_1\WebApi\obj\Debug\net9.0\staticwebassets.build.json
+C:\Backend\Lab_1\WebApi\obj\Debug\net9.0\staticwebassets.build.json
+C:\Backend\Lab_1\WebApp\obj\Debug\net9.0\staticwebassets.build.json
+C:\Backend\Lab_1\WebApp\obj\Debug\net9.0\staticwebassets.build.json

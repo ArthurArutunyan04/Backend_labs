@@ -1,0 +1,145 @@
+﻿services:
+  postgres:
+    image: postgres:17
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=mypassword
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOST_AUTH_METHOD=scram-sha-256
+      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./initdb.d:/docker-entrypoint-initdb.d
+    ports:
+       - "5433:5432"
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  pgbouncer:
+    image: public.ecr.aws/bitnami/pgbouncer:1.24.1
+    container_name: pgbouncer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - POSTGRESQL_HOST=postgres
+      - POSTGRESQL_PORT=5432
+      - POSTGRESQL_USERNAME=user
+      - POSTGRESQL_PASSWORD=mypassword
+      - PGBOUNCER_IDLE_TRANSACTION_TIMEOUT=0
+      - PGBOUNCER_POOL_MODE=transaction
+      - PGBOUNCER_SERVER_RESET_QUERY_ALWAYS=0
+      - PGBOUNCER_SERVER_LIFETIME=3600
+      - PGBOUNCER_SERVER_IDLE_TIMEOUT=60
+      - PGBOUNCER_MAX_DB_CONNECTIONS=50
+      - PGBOUNCER_MAX_CLIENT_CONN=10000
+      - PGBOUNCER_RESERVE_POOL_SIZE=5
+      - PGBOUNCER_MIN_POOL_SIZE=2
+      - PGBOUNCER_DEFAULT_POOL_SIZE=16
+      - PGBOUNCER_IGNORE_STARTUP_PARAMETERS=extra_float_digits
+    ports:
+      - "15432:6432"
+    restart: unless-stopped
+
+  kafka:
+    image: apache/kafka:4.0.0
+    restart: always
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:9093,EXTERNAL://:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:29092,EXTERNAL://localhost:9092
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+      - KAFKA_LOG_DIRS=/var/lib/kafka/data
+      - CLUSTER_ID=universe-labs-cluster
+    volumes:
+      - ./kafka-data:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    restart: always
+    container_name: kafka-ui
+    ports:
+      - "8180:8080"
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
+
+  webapi:
+    build:
+      context: .
+      dockerfile: WebApp/Dockerfile
+    container_name: webapi
+    environment:
+      - DbSettings__ConnectionString=Host=pgbouncer;Port=6432;Database=postgres;User Id=user;Password=mypassword;Pooling=false;No Reset On Close=true;Command Timeout=60;Timeout=60
+      - DbSettings__MigrationConnectionString=Host=postgres;Port=5432;Database=postgres;User Id=user;Password=mypassword;Pooling=true;LoadTableComposites=true;No Reset On Close=true;Persist Security Info=False;Maximum Pool Size=100;Connection Idle Lifetime=300;Keepalive=300;TCP Keepalive=True;Command Timeout=60;Timeout=60
+      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_ENVIRONMENT=Development
+      - KafkaSettings__BootstrapServers=kafka:29092
+      - KafkaSettings__ClientId=universe-labs-oms
+      - KafkaSettings__OmsOrderCreatedTopic=oms_order_created
+      - KafkaSettings__OmsOrderStatusChangedTopic=oms_order_status_changed
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  oms-consumer:
+    build:
+      context: .
+      dockerfile: Consumer/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - KafkaSettings__BootstrapServers=kafka:29092
+      - KafkaSettings__GroupId=universe-labs-oms-consumer
+      - KafkaSettings__OmsOrderCreatedTopic=oms_order_created
+      - KafkaSettings__OmsOrderStatusChangedTopic=oms_order_status_changed
+      - HttpClient__Oms__BaseAddress=http://webapi:8080
+    deploy:
+      replicas: 1
+    depends_on:
+      pgbouncer:
+        condition: service_started
+      kafka:
+        condition: service_started
+    restart: unless-stopped
+
+  pgadmin:
+     image: dpage/pgadmin4
+     container_name: pgadmin
+     environment:
+       - PGADMIN_DEFAULT_EMAIL=admin@example.com
+       - PGADMIN_DEFAULT_PASSWORD=admin
+     ports:
+       - "5050:80"
+     depends_on:
+       postgres:
+         condition: service_healthy
+     restart: unless-stopped
+
+volumes:
+  pgdata:
+  kafka_data:
