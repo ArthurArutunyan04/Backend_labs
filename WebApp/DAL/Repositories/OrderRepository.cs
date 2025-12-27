@@ -9,6 +9,8 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
 {
     public async Task<V1OrderDal[]> BulkInsert(V1OrderDal[] model, CancellationToken token)
     {
+        if (model.Length == 0) return [];
+
         var sql = @"
             INSERT INTO orders 
             (
@@ -18,17 +20,33 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
                 total_price_currency,
                 created_at,
                 updated_at,
-                status
-             )
+                order_status 
+            )
             SELECT 
+                t.customer_id,
+                t.delivery_address,
+                t.total_price_cents,
+                t.total_price_currency,
+                t.created_at,
+                t.updated_at,
+                t.order_status
+            FROM UNNEST(
+                @customerIds::bigint[],
+                @addresses::text[],
+                @prices::bigint[],
+                @currencies::text[],
+                @created::timestamptz[],
+                @updated::timestamptz[],
+                @statuses::text[]
+            ) AS t(
                 customer_id,
                 delivery_address,
                 total_price_cents,
                 total_price_currency,
                 created_at,
                 updated_at,
-                status
-            FROM UNNEST(@Orders)
+                order_status
+            )
             RETURNING 
                 id,
                 customer_id,
@@ -37,12 +55,20 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
                 total_price_currency,
                 created_at,
                 updated_at,
-                status;
+                order_status AS status; 
         ";
 
         var conn = await unitOfWork.GetConnection(token);
-        var res = await conn.QueryAsync<V1OrderDal>(new CommandDefinition(
-            sql, new { Orders = model }, cancellationToken: token));
+        var res = await conn.QueryAsync<V1OrderDal>(new CommandDefinition(sql, new
+        {
+            customerIds = model.Select(x => x.CustomerId).ToArray(),
+            addresses = model.Select(x => x.DeliveryAddress).ToArray(),
+            prices = model.Select(x => x.TotalPriceCents).ToArray(),
+            currencies = model.Select(x => x.TotalPriceCurrency).ToArray(),
+            created = model.Select(x => x.CreatedAt).ToArray(),
+            updated = model.Select(x => x.UpdatedAt).ToArray(),
+            statuses = model.Select(x => x.Status).ToArray()
+        }, cancellationToken: token));
 
         return res.ToArray();
     }
@@ -58,7 +84,7 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
                 total_price_currency,
                 created_at,
                 updated_at,
-                status
+                order_status AS status 
             FROM orders
         ");
 
@@ -106,7 +132,11 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
         if (orderIds.Count == 0) return [];
 
         var sql = @"
-            SELECT id, customer_id, delivery_address, total_price_cents, total_price_currency, created_at, updated_at, status
+            SELECT 
+                id, customer_id, delivery_address, 
+                total_price_cents, total_price_currency, 
+                created_at, updated_at,
+                order_status AS status  
             FROM orders
             WHERE id = ANY(@OrderIds)
         ";
@@ -122,7 +152,7 @@ public class OrderRepository(UnitOfWork unitOfWork) : IOrderRepository
 
         var sql = @"
             UPDATE orders
-            SET status = @NewStatus, updated_at = NOW()
+            SET order_status = @NewStatus, updated_at = NOW() 
             WHERE id = ANY(@OrderIds)
         ";
 
