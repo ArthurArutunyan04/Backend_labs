@@ -1,0 +1,13 @@
+/home/artur/RiderProjects/WebApp/Common/bin/Debug/net9.0/Common.deps.json
+/home/artur/RiderProjects/WebApp/Common/bin/Debug/net9.0/Common.dll
+/home/artur/RiderProjects/WebApp/Common/bin/Debug/net9.0/Common.pdb
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/Common.csproj.AssemblyReference.cache
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/Common.GeneratedMSBuildEditorConfig.editorconfig
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/Common.AssemblyInfoInputs.cache
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/Common.AssemblyInfo.cs
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/Common.csproj.CoreCompileInputs.cache
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/Common.sourcelink.json
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/Common.dll
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/refint/Common.dll
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/Common.pdb
+/home/artur/RiderProjects/WebApp/Common/obj/Debug/net9.0/ref/Common.dll

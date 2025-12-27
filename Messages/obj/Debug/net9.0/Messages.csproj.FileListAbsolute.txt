@@ -1,0 +1,12 @@
+/home/artur/RiderProjects/WebApp/Messages/bin/Debug/net9.0/Messages.deps.json
+/home/artur/RiderProjects/WebApp/Messages/bin/Debug/net9.0/Messages.dll
+/home/artur/RiderProjects/WebApp/Messages/bin/Debug/net9.0/Messages.pdb
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/Messages.GeneratedMSBuildEditorConfig.editorconfig
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/Messages.AssemblyInfoInputs.cache
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/Messages.AssemblyInfo.cs
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/Messages.csproj.CoreCompileInputs.cache
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/Messages.sourcelink.json
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/Messages.dll
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/refint/Messages.dll
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/Messages.pdb
+/home/artur/RiderProjects/WebApp/Messages/obj/Debug/net9.0/ref/Messages.dll
